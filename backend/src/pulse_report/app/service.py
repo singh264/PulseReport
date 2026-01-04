@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass
+from datetime import date, time
+from typing import Optional
+
+from pulse_report.domain.pcr import (
+    ConsentStatus,
+    Disposition,
+    PatientInfo,
+    Pcr,
+    TreatmentEntry,
+    VitalSigns,
+)
+from pulse_report.domain.summary import PlainTextSummaryFormatter, SummaryFormatter
+
+from .repository import PcrRepository
+
+
+@dataclass
+class PcrService:
+    repo: PcrRepository
+    formatter: SummaryFormatter = PlainTextSummaryFormatter()
+
+    def create_pcr(
+        self,
+        *,
+        event_name: str,
+        report_date: date,
+        report_time: time,
+        patient: PatientInfo,
+        consent: ConsentStatus,
+        history_description: str,
+        initial_vitals: list[VitalSigns],
+        treatments: list[TreatmentEntry],
+        disposition: Optional[Disposition],
+    ) -> str:
+        pcr_id = self._new_id()
+        pcr = Pcr(
+            pcr_id=pcr_id,
+            event_name=event_name,
+            report_date=report_date,
+            report_time=report_time,
+            patient=patient,
+            consent=consent,
+            history_description=history_description,
+            initial_vitals=initial_vitals,
+            treatments=treatments,
+            disposition=disposition,
+        )
+        self.repo.save(pcr)
+        return pcr_id
+
+    def export_summary(self, pcr_id: str) -> str:
+        pcr = self.repo.get(pcr_id)
+        if pcr is None:
+            raise KeyError(f"PCR not found: {pcr_id}")
+        return self.formatter.format(pcr)
+
+    @staticmethod
+    def _new_id() -> str:
+        return str(uuid.uuid4())
+
