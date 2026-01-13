@@ -114,3 +114,17 @@ class PcrResponse(BaseModel):
     treatments: list[TreatmentEntryOut]
     disposition: Optional[DispositionOut]
 
+
+class QualityIssueOut(BaseModel):
+    code: str
+    message: str
+    severity: str
+
+
+class QualityReportResponse(BaseModel):
+    pcr_id: str
+    issue_count: int
+    warning_count: int
+    error_count: int
+    issues: list[QualityIssueOut]
+

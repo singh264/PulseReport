@@ -5,6 +5,7 @@ from fastapi.responses import Response
 
 from pulse_report.app.repository import InMemoryPcrRepository, PcrRepository
 from pulse_report.app.service import PcrService
+from pulse_report.app.quality_service import QualityService
 from pulse_report.domain.errors import DomainValidationError
 from pulse_report.domain.pcr import (
     AccompaniedBy,
@@ -18,7 +19,7 @@ from pulse_report.domain.pcr import (
     VitalSigns,
 )
 
-from .schemas import CreatePcrRequest, CreatePcrResponse, PcrResponse
+from .schemas import CreatePcrRequest, CreatePcrResponse, PcrResponse, QualityReportResponse
 
 
 def create_app(repo: PcrRepository | None = None) -> FastAPI:
@@ -33,6 +34,9 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
     def get_service() -> PcrService:
         # Dependency Injection (FastAPI Depends)
         return PcrService(repo=repository)
+
+    def get_quality_service() -> QualityService:
+        return QualityService.default(repo=repository)
 
     @app.post("/pcr", status_code=201, response_model=CreatePcrResponse)
     def create_pcr(req: CreatePcrRequest, svc: PcrService = Depends(get_service)) -> CreatePcrResponse:
@@ -64,6 +68,23 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
         try:
             summary = svc.export_summary(pcr_id)
             return Response(content=summary, media_type="text/plain")
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="PCR not found") from e
+
+    @app.get("/pcr/{pcr_id}/quality", response_model=QualityReportResponse)
+    def get_quality(pcr_id: str, qs: QualityService = Depends(get_quality_service)) -> QualityReportResponse:
+        try:
+            report = qs.evaluate(pcr_id)
+            return QualityReportResponse(
+                pcr_id=pcr_id,
+                issue_count=report.issue_count,
+                warning_count=report.warning_count,
+                error_count=report.error_count,
+                issues=[
+                    {"code": i.code, "message": i.message, "severity": i.severity.value}
+                    for i in report.issues
+                ],
+            )
         except KeyError as e:
             raise HTTPException(status_code=404, detail="PCR not found") from e
 
