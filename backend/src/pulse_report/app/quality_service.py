@@ -9,6 +9,7 @@ from pulse_report.domain.quality import (
     DispositionMissingInstructionsRule,
     VitalsChronologyRule,
     VitalsPlausibilityRule,
+    DispositionNotDocumentedRule,
 )
 
 
@@ -21,6 +22,7 @@ class QualityService:
     def default(cls, repo: PcrRepository) -> "QualityService":
         engine = DocumentationQualityEngine(
             rules=[
+                DispositionNotDocumentedRule(),
                 DispositionMissingInstructionsRule(),
                 VitalsPlausibilityRule(),
                 VitalsChronologyRule(),

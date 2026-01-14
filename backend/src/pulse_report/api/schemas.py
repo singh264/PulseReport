@@ -128,3 +128,10 @@ class QualityReportResponse(BaseModel):
     error_count: int
     issues: list[QualityIssueOut]
 
+
+class UpdateDispositionRequest(BaseModel):
+    discharge_time: Optional[time] = None
+    disposition: Optional[str] = None
+    accompanied_by: Optional[str] = None
+    discharge_instructions: Optional[str] = None
+

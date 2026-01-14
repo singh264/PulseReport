@@ -12,6 +12,7 @@ from pulse_report.domain.pcr import (
     Pcr,
     TreatmentEntry,
     VitalSigns,
+    AccompaniedBy,
 )
 from pulse_report.domain.summary import PlainTextSummaryFormatter, SummaryFormatter
 
@@ -61,4 +62,28 @@ class PcrService:
     @staticmethod
     def _new_id() -> str:
         return str(uuid.uuid4())
+
+    def update_disposition(
+        self,
+        pcr_id: str,
+        *,
+        discharge_time: time | None = None,
+        disposition: str | None = None,
+        accompanied_by: "AccompaniedBy | None" = None,
+        discharge_instructions: str | None = None,
+    ) -> Pcr:
+        pcr = self.repo.get(pcr_id)
+        if pcr is None:
+            raise KeyError(f"PCR not found: {pcr_id}")
+
+        pcr.update_disposition(
+            discharge_time=discharge_time,
+            disposition=disposition,
+            accompanied_by=accompanied_by,
+            discharge_instructions=discharge_instructions,
+        )
+
+        # For future Postgres repo, save() makes persistence explicit
+        self.repo.save(pcr)
+        return pcr
 

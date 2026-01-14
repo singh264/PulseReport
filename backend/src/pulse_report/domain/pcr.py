@@ -124,3 +124,48 @@ class Pcr:
         if len(self.initial_vitals) == 0:
             raise DomainValidationError("At least one initial vital sign entry is required.")
 
+    def update_disposition(
+        self,
+        *,
+        discharge_time: time | None = None,
+        disposition: str | None = None,
+        accompanied_by: AccompaniedBy | None = None,
+        discharge_instructions: str | None = None,
+    ) -> None:
+        # No-op guard
+        if (
+            discharge_time is None
+            and disposition is None
+            and accompanied_by is None
+            and discharge_instructions is None
+        ):
+            raise DomainValidationError("No disposition fields provided to update.")
+
+        if discharge_instructions is not None and not discharge_instructions.strip():
+            raise DomainValidationError("discharge_instructions must not be empty when provided.")
+
+        if self.disposition is None:
+            # Creating a disposition requires the core fields
+            if discharge_time is None or disposition is None or accompanied_by is None:
+                raise DomainValidationError(
+                    "Cannot set disposition without discharge_time, disposition, and accompanied_by."
+                )
+            self.disposition = Disposition(
+                discharge_time=discharge_time,
+                disposition=disposition,
+                accompanied_by=accompanied_by,
+                discharge_instructions=discharge_instructions or "",
+            )
+            return
+
+        # Updating existing disposition: merge provided fields
+        current = self.disposition
+        self.disposition = Disposition(
+            discharge_time=discharge_time or current.discharge_time,
+            disposition=disposition or current.disposition,
+            accompanied_by=accompanied_by or current.accompanied_by,
+            discharge_instructions=(
+                discharge_instructions if discharge_instructions is not None else current.discharge_instructions
+            ),
+        )
+

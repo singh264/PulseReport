@@ -19,7 +19,7 @@ from pulse_report.domain.pcr import (
     VitalSigns,
 )
 
-from .schemas import CreatePcrRequest, CreatePcrResponse, PcrResponse, QualityReportResponse
+from .schemas import CreatePcrRequest, CreatePcrResponse, PcrResponse, QualityReportResponse, UpdateDispositionRequest
 
 
 def create_app(repo: PcrRepository | None = None) -> FastAPI:
@@ -87,6 +87,27 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
             )
         except KeyError as e:
             raise HTTPException(status_code=404, detail="PCR not found") from e
+
+    @app.patch("/pcr/{pcr_id}/disposition", response_model=PcrResponse)
+    def patch_disposition(
+        pcr_id: str,
+        req: UpdateDispositionRequest,
+        svc: PcrService = Depends(get_service),
+    ) -> PcrResponse:
+        try:
+            updated = svc.update_disposition(
+                pcr_id,
+                discharge_time=req.discharge_time,
+                disposition=req.disposition,
+                accompanied_by=AccompaniedBy(req.accompanied_by) if req.accompanied_by is not None else None,
+                discharge_instructions=req.discharge_instructions,
+            )
+            return _to_api_pcr(updated)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="PCR not found") from e
+        except (DomainValidationError, ValueError) as e:
+            # ValueError covers invalid enum strings, etc.
+            raise HTTPException(status_code=400, detail=str(e)) from e
 
     return app
 

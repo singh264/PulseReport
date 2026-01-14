@@ -135,3 +135,16 @@ class DocumentationQualityEngine:
             issues.extend(r.evaluate(pcr))
         return DocumentationQualityReport(issues=issues)
 
+@dataclass(frozen=True)
+class DispositionNotDocumentedRule:
+    def evaluate(self, pcr: Pcr) -> list[QualityIssue]:
+        if pcr.disposition is not None:
+            return []
+        return [
+            QualityIssue(
+                code="DISPOSITION_NOT_DOCUMENTED",
+                message="Disposition is not documented.",
+                severity=Severity.WARNING,
+            )
+        ]
+

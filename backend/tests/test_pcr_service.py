@@ -152,3 +152,51 @@ def test_validation_rejects_out_of_range_pain_score():
             disposition=None,
         )
 
+def test_update_disposition_updates_existing_discharge_instructions():
+    repo = InMemoryPcrRepository()
+    service = PcrService(repo=repo)
+
+    patient = PatientInfo(
+        full_name="Jane Doe",
+        date_of_birth=date(2000, 1, 15),
+        sex=Sex.FEMALE,
+        phone="555-123-4567",
+    )
+
+    vs0 = VitalSigns(
+        observed_at=datetime(2026, 1, 2, 10, 15),
+        pulse_bpm=92,
+        resp_per_min=18,
+        systolic_bp=124,
+        diastolic_bp=78,
+        skin="Warm, dry",
+        loc=LocLevel.ALERT,
+        pain_0_to_10=2,
+        pupils=Pupils(left_reactive=True, right_reactive=True),
+    )
+
+    pcr_id = service.create_pcr(
+        event_name="Community Event",
+        report_date=date(2026, 1, 2),
+        report_time=time(10, 30),
+        patient=patient,
+        consent=ConsentStatus.GIVEN,
+        history_description="Felt dizzy after standing up quickly.",
+        initial_vitals=[vs0],
+        treatments=[],
+        disposition=Disposition(
+            discharge_time=time(11, 0),
+            disposition="Home",
+            accompanied_by=AccompaniedBy.SELF,
+            discharge_instructions="",
+        ),
+    )
+
+    updated = service.update_disposition(
+        pcr_id,
+        discharge_instructions="Hydrate, rest, return if symptoms worsen.",
+    )
+
+    assert updated.disposition is not None
+    assert updated.disposition.discharge_instructions == "Hydrate, rest, return if symptoms worsen."
+
