@@ -87,3 +87,20 @@ class PcrService:
         self.repo.save(pcr)
         return pcr
 
+    def list_pcrs(self, *, limit: int = 50, offset: int = 0) -> list[Pcr]:
+        if limit < 1 or limit > 200:
+            raise ValueError("limit must be between 1 and 200")
+        if offset < 0:
+            raise ValueError("offset must be >= 0")
+
+        pcrs = self.repo.list()
+
+        # Deterministic sort for “inbox” view
+        pcrs_sorted = sorted(
+            pcrs,
+            key=lambda p: (p.report_date, p.report_time, p.pcr_id),
+            reverse=True,
+        )
+
+        return pcrs_sorted[offset : offset + limit]
+

@@ -135,3 +135,17 @@ class UpdateDispositionRequest(BaseModel):
     accompanied_by: Optional[str] = None
     discharge_instructions: Optional[str] = None
 
+
+class PcrListItem(BaseModel):
+    pcr_id: str
+    event_name: str
+    report_date: date
+    report_time: time
+    patient_full_name: str
+    consent: str
+    has_disposition: bool
+
+
+class PcrListResponse(BaseModel):
+    items: list[PcrListItem]
+

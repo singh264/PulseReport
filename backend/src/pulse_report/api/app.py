@@ -19,8 +19,14 @@ from pulse_report.domain.pcr import (
     VitalSigns,
 )
 
-from .schemas import CreatePcrRequest, CreatePcrResponse, PcrResponse, QualityReportResponse, UpdateDispositionRequest
-
+from .schemas import (
+    CreatePcrRequest,
+    CreatePcrResponse,
+    PcrResponse,
+    QualityReportResponse,
+    UpdateDispositionRequest,
+    PcrListResponse,
+)
 
 def create_app(repo: PcrRepository | None = None) -> FastAPI:
     """
@@ -55,6 +61,28 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
             return CreatePcrResponse(pcr_id=pcr_id)
         except (DomainValidationError, ValueError) as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @app.get("/pcr", response_model=PcrListResponse)
+    def list_pcrs(limit: int = 50, offset: int = 0, svc: PcrService = Depends(get_service)) -> PcrListResponse:
+        try:
+            pcrs = svc.list_pcrs(limit=limit, offset=offset)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+        return PcrListResponse(
+            items=[
+                {
+                    "pcr_id": p.pcr_id,
+                    "event_name": p.event_name,
+                    "report_date": p.report_date,
+                    "report_time": p.report_time,
+                    "patient_full_name": p.patient.full_name,
+                    "consent": p.consent.value,
+                    "has_disposition": p.disposition is not None,
+                }
+                for p in pcrs
+            ]
+        )
 
     @app.get("/pcr/{pcr_id}", response_model=PcrResponse)
     def get_pcr(pcr_id: str, svc: PcrService = Depends(get_service)) -> PcrResponse:
