@@ -26,6 +26,7 @@ from .schemas import (
     QualityReportResponse,
     UpdateDispositionRequest,
     PcrListResponse,
+    VitalSignsIn,
 )
 
 def create_app(repo: PcrRepository | None = None) -> FastAPI:
@@ -135,6 +136,21 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="PCR not found") from e
         except (DomainValidationError, ValueError) as e:
             # ValueError covers invalid enum strings, etc.
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @app.post("/pcr/{pcr_id}/vitals", response_model=PcrResponse)
+    def add_vitals(
+        pcr_id: str,
+        req: VitalSignsIn,
+        svc: PcrService = Depends(get_service),
+    ) -> PcrResponse:
+        try:
+            vital = _to_domain_vitals(req)
+            updated = svc.add_vital(pcr_id, vital)
+            return _to_api_pcr(updated)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="PCR not found") from e
+        except (DomainValidationError, ValueError) as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
 
     return app

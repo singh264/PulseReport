@@ -104,3 +104,12 @@ class PcrService:
 
         return pcrs_sorted[offset : offset + limit]
 
+    def add_vital(self, pcr_id: str, vital: VitalSigns) -> Pcr:
+        pcr = self.repo.get(pcr_id)
+        if pcr is None:
+            raise KeyError(f"PCR not found: {pcr_id}")
+
+        pcr.add_vital(vital)
+        self.repo.save(pcr)
+        return pcr
+

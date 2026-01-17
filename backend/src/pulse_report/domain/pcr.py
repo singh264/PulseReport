@@ -169,3 +169,13 @@ class Pcr:
             ),
         )
 
+    def add_vital(self, vital: VitalSigns) -> None:
+        if self.initial_vitals:
+            latest = max(v.observed_at for v in self.initial_vitals)
+            if vital.observed_at < latest:
+                raise DomainValidationError("observed_at cannot be earlier than the latest recorded vitals timestamp.")
+
+        self.initial_vitals.append(vital)
+        # Keep stored vitals chronological for predictable reads
+        self.initial_vitals.sort(key=lambda v: v.observed_at)
+
