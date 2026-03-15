@@ -113,3 +113,11 @@ class PcrService:
         self.repo.save(pcr)
         return pcr
 
+    def add_treatment(self, pcr_id: str, treatment: TreatmentEntry) -> Pcr:
+        pcr = self.repo.get(pcr_id)
+        if pcr is None:
+            raise KeyError(f"PCR not found: {pcr_id}")
+
+        pcr.add_treatment(treatment)
+        self.repo.save(pcr)
+        return pcr

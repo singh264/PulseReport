@@ -179,3 +179,7 @@ class Pcr:
         # Keep stored vitals chronological for predictable reads
         self.initial_vitals.sort(key=lambda v: v.observed_at)
 
+    def add_treatment(self, treatment: TreatmentEntry) -> None:
+        self.treatments.append(treatment)
+        # Keep stored treatments chronological for predictable reads
+        self.treatments.sort(key=lambda t: t.performed_at)

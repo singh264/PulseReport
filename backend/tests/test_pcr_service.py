@@ -251,3 +251,54 @@ def test_add_vital_appends_and_sorts_by_time():
     assert len(updated.initial_vitals) == 2
     assert updated.initial_vitals[0].observed_at < updated.initial_vitals[1].observed_at
 
+def test_add_treatment_appends_and_sorts_by_time():
+    repo = InMemoryPcrRepository()
+    service = PcrService(repo=repo)
+
+    patient = PatientInfo(
+        full_name="Jane Doe",
+        date_of_birth=date(2000, 1, 15),
+        sex=Sex.FEMALE,
+        phone="555-123-4567",
+    )
+
+    vs0 = VitalSigns(
+        observed_at=datetime(2026, 1, 2, 10, 15),
+        pulse_bpm=92,
+        resp_per_min=18,
+        systolic_bp=124,
+        diastolic_bp=78,
+        skin="Warm, dry",
+        loc=LocLevel.ALERT,
+        pain_0_to_10=2,
+        pupils=Pupils(left_reactive=True, right_reactive=True),
+    )
+
+    pcr_id = service.create_pcr(
+        event_name="Community Event",
+        report_date=date(2026, 1, 2),
+        report_time=time(10, 30),
+        patient=patient,
+        consent=ConsentStatus.GIVEN,
+        history_description="Test",
+        initial_vitals=[vs0],
+        treatments=[],
+        disposition=None,
+    )
+
+    t1 = TreatmentEntry(
+        performed_at=datetime(2026, 1, 2, 10, 40),
+        intervention="Ice pack",
+        results_notes="Reduced pain",
+    )
+    t0 = TreatmentEntry(
+        performed_at=datetime(2026, 1, 2, 10, 20),
+        intervention="Oxygen",
+        results_notes="Improved symptoms",
+    )
+
+    service.add_treatment(pcr_id, t1)
+    updated = service.add_treatment(pcr_id, t0)
+
+    assert len(updated.treatments) == 2
+    assert updated.treatments[0].performed_at < updated.treatments[1].performed_at
