@@ -149,3 +149,6 @@ class PcrListItem(BaseModel):
 class PcrListResponse(BaseModel):
     items: list[PcrListItem]
 
+
+class UpdateHistoryRequest(BaseModel):
+    history_description: str

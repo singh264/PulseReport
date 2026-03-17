@@ -183,3 +183,8 @@ class Pcr:
         self.treatments.append(treatment)
         # Keep stored treatments chronological for predictable reads
         self.treatments.sort(key=lambda t: t.performed_at)
+
+    def update_history_description(self, history_description: str) -> None:
+        if not history_description.strip():
+            raise DomainValidationError("history_description must not be empty.")
+        self.history_description = history_description.strip()

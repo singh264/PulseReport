@@ -28,6 +28,7 @@ from .schemas import (
     PcrListResponse,
     VitalSignsIn,
     TreatmentEntryIn,
+    UpdateHistoryRequest,
 )
 
 def create_app(repo: PcrRepository | None = None) -> FastAPI:
@@ -163,6 +164,20 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
         try:
             treatment = _to_domain_treatment(req)
             updated = svc.add_treatment(pcr_id, treatment)
+            return _to_api_pcr(updated)
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="PCR not found") from e
+        except (DomainValidationError, ValueError) as e:
+            raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @app.patch("/pcr/{pcr_id}/history", response_model=PcrResponse)
+    def patch_history(
+        pcr_id: str,
+        req: UpdateHistoryRequest,
+        svc: PcrService = Depends(get_service),
+    ) -> PcrResponse:
+        try:
+            updated = svc.update_history_description(pcr_id, req.history_description)
             return _to_api_pcr(updated)
         except KeyError as e:
             raise HTTPException(status_code=404, detail="PCR not found") from e

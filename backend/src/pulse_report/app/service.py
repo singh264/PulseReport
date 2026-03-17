@@ -121,3 +121,12 @@ class PcrService:
         pcr.add_treatment(treatment)
         self.repo.save(pcr)
         return pcr
+
+    def update_history_description(self, pcr_id: str, history_description: str) -> Pcr:
+        pcr = self.repo.get(pcr_id)
+        if pcr is None:
+            raise KeyError(f"PCR not found: {pcr_id}")
+
+        pcr.update_history_description(history_description)
+        self.repo.save(pcr)
+        return pcr
