@@ -16,9 +16,11 @@ src/pulse_report/domain/pcr.py
 src/pulse_report/domain/quality.py
 src/pulse_report/domain/summary.py
 src/pulse_report/scripts/demo_create_pcr.py
+tests/test_api_add_treatments.py
 tests/test_api_add_vitals.py
 tests/test_api_list_pcrs.py
 tests/test_api_patch_disposition.py
+tests/test_api_patch_history.py
 tests/test_api_pcr_endpoints.py
 tests/test_api_quality_endpoint.py
 tests/test_pcr_service.py
