@@ -5,6 +5,7 @@ from fastapi.responses import Response
 
 from pulse_report.app.repository import InMemoryPcrRepository, PcrRepository
 from pulse_report.app.service import PcrService
+from pulse_report.app.triage_service import TriageService
 from pulse_report.app.quality_service import QualityService
 from pulse_report.domain.errors import DomainValidationError
 from pulse_report.domain.pcr import (
@@ -29,9 +30,10 @@ from .schemas import (
     VitalSignsIn,
     TreatmentEntryIn,
     UpdateHistoryRequest,
+    TriageResponse,
 )
 
-def create_app(repo: PcrRepository | None = None) -> FastAPI:
+def create_app(repo: PcrRepository | None = None, triage_model_path: str | None = None) -> FastAPI:
     """
     App Factory (design pattern):
     - allows tests to inject a repo
@@ -46,6 +48,18 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
 
     def get_quality_service() -> QualityService:
         return QualityService.default(repo=repository)
+
+    triage_service: TriageService | None = None
+    model_path = triage_model_path or "models/triage_logreg.json"
+
+    def get_triage_service() -> TriageService:
+        nonlocal triage_service
+        if triage_service is None:
+            try:
+                triage_service = TriageService.default(repo=repository, model_path=model_path)
+            except FileNotFoundError as e:
+                raise HTTPException(status_code=500, detail="Triage model artifact not found") from e
+        return triage_service
 
     @app.post("/pcr", status_code=201, response_model=CreatePcrResponse)
     def create_pcr(req: CreatePcrRequest, svc: PcrService = Depends(get_service)) -> CreatePcrResponse:
@@ -183,6 +197,19 @@ def create_app(repo: PcrRepository | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="PCR not found") from e
         except (DomainValidationError, ValueError) as e:
             raise HTTPException(status_code=400, detail=str(e)) from e
+
+    @app.get("/pcr/{pcr_id}/triage", response_model=TriageResponse)
+    def get_triage(pcr_id: str, ts: TriageService = Depends(get_triage_service)) -> TriageResponse:
+        try:
+            result = ts.predict_for_pcr(pcr_id, top_k=5)
+            return TriageResponse(
+                pcr_id=result.pcr_id,
+                risk_score=result.risk_score,
+                label=result.label,
+                top_contributions=result.top_contributions,
+            )
+        except KeyError as e:
+            raise HTTPException(status_code=404, detail="PCR not found") from e
 
     return app
 

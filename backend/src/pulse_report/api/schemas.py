@@ -152,3 +152,18 @@ class PcrListResponse(BaseModel):
 
 class UpdateHistoryRequest(BaseModel):
     history_description: str
+
+
+class TriageFeatureContribution(BaseModel):
+    name: str
+    raw_value: float
+    standardized_value: float
+    weight: float
+    contribution: float
+
+
+class TriageResponse(BaseModel):
+    pcr_id: str
+    risk_score: float
+    label: str
+    top_contributions: list[TriageFeatureContribution]
